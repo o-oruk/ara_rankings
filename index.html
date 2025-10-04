@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Arab World Cube Leaderboard</title>
+  <style>
+    body {
+      font-family: "Poppins", sans-serif;
+      background: #f8fafc;
+      color: #111827;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    header {
+      background: #2563eb;
+      color: white;
+      width: 100%;
+      text-align: center;
+      padding: 1rem 0;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    }
+    h1 {
+      margin: 0;
+      font-size: 1.8rem;
+    }
+    select {
+      margin: 1rem 0;
+      padding: 0.4rem 0.6rem;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+    }
+    table {
+      border-collapse: collapse;
+      width: 95%;
+      max-width: 900px;
+      margin-bottom: 2rem;
+      background: white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    th, td {
+      padding: 0.6rem;
+      text-align: left;
+    }
+    th {
+      background: #e0e7ff;
+      font-weight: 600;
+    }
+    tr:nth-child(even) {
+      background: #f9fafb;
+    }
+    .loading {
+      margin-top: 2rem;
+      font-size: 1.2rem;
+      color: #555;
+    }
+    footer {
+      padding: 1rem;
+      font-size: 0.9rem;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Arab World Cube Leaderboard 🌍</h1>
+    <p>Live data from the World Cube Association API</p>
+  </header>
+
+  <select id="eventSelect">
+    <option value="333">3×3 Cube (Average)</option>
+    <option value="222">2×2 Cube (Average)</option>
+    <option value="444">4×4 Cube (Average)</option>
+    <option value="pyram">Pyraminx (Average)</option>
+    <option value="skewb">Skewb (Average)</option>
+    <option value="clock">Clock (Average)</option>
+  </select>
+
+  <div class="loading" id="loading">Loading rankings...</div>
+
+  <table id="leaderboard" style="display:none;">
+    <thead>
+      <tr>
+        <th>Rank</th>
+        <th>Name</th>
+        <th>Country</th>
+        <th>Average (s)</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <footer>Made with ❤️ using WCA public data</footer>
+
+  <script>
+    const arabCountries = ["EG","SA","AE","JO","LB","MA","DZ","TN","KW","OM","QA","BH","SD","YE","IQ","SY","PS"];
+    const eventSelect = document.getElementById('eventSelect');
+    const loading = document.getElementById('loading');
+    const table = document.getElementById('leaderboard');
+    const tbody = table.querySelector('tbody');
+
+    async function fetchCountryRankings(event, country) {
+      const url = `https://www.worldcubeassociation.org/api/v0/results/rankings/${event}/average?country_iso2=${country}`;
+      const response = await fetch(url);
+      if (!response.ok) return [];
+      const data = await response.json();
+      return data.rankings || [];
+    }
+
+    async function loadRankings() {
+      loading.style.display = 'block';
+      table.style.display = 'none';
+      tbody.innerHTML = '';
+
+      const event = eventSelect.value;
+      let allResults = [];
+
+      for (const country of arabCountries) {
+        const results = await fetchCountryRankings(event, country);
+        allResults = allResults.concat(results);
+      }
+
+      allResults.sort((a, b) => a.best - b.best);
+
+      allResults.slice(0, 100).forEach((r, i) => {
+        const tr = document.createElement('tr');
+        const avgSeconds = (r.best / 100.0).toFixed(2);
+        tr.innerHTML = `
+          <td>${i + 1}</td>
+          <td>${r.person.name}</td>
+          <td>${r.country.name}</td>
+          <td>${avgSeconds}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      loading.style.display = 'none';
+      table.style.display = 'table';
+    }
+
+    eventSelect.addEventListener('change', loadRankings);
+    loadRankings();
+  </script>
+</body>
+</html>
